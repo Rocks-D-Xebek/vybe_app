@@ -1,0 +1,14 @@
+{
+  "name": "vybe",
+  "version": "1.0.0",
+  "description": "VYBE Fitness App",
+  "main": "index.js",
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/camera": "^8.2.6",
+    "@capacitor/core": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
+  }
+}
