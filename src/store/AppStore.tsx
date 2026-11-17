@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { dayKey } from '../lib/dates';
+import { dayKey, mealCategoryByHour, MealSlot } from '../lib/dates';
+import type { Food } from '../lib/foods';
 import type { Plan } from '../lib/api';
 
 export interface Nutrients {
@@ -11,13 +12,15 @@ export interface MealItem {
   name: string; quantity: string; calories: number;
   proteinG: number; carbsG: number; fatG: number;
   fiberG?: number; sugarG?: number; sodiumMg?: number; confidence?: string;
+  foodId?: string; unit?: string; qty?: number;   // set when logged with the calculator, so it can be re-edited
 }
-export type MealCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-export type MealSource = 'scan' | 'manual' | 'text' | 'label' | 'barcode' | 'favourite';
+export type MealCategory = MealSlot;
+export type MealSource = 'scan' | 'manual' | 'text' | 'label' | 'barcode' | 'favourite' | 'search';
 export interface Meal {
   id: string; items: MealItem[]; totalCalories: number; proteinG: number;
   carbsG: number; fatG: number; fiberG?: number; sugarG?: number; sodiumMg?: number;
   category: MealCategory; eatenAt: number; loggedAt: number; source: MealSource; confirmed: boolean;
+  timeApprox?: boolean;   // logged later without an exact time – excluded from meal-timing insights
 }
 export interface WeightEntry { kg: number; at: number }
 export interface WorkoutPart { activity: string; minutes: number; intensity: 'light' | 'moderate' | 'intense' }
@@ -51,12 +54,13 @@ interface Persisted {
   workouts: Workout[]; dayLogs: Record<string, DayLog>; profile: Profile; favourites: FavMeal[];
   challenges: ChallengeJoin[]; avatar: AvatarChoice; bannerUri: string | null; premium: boolean;
   plan: Plan | null; planStartedAt: number | null; planChat: ChatMsg[]; reminders: Reminders; openDays: string[];
+  customFoods: Food[];   // foods Mr. Vyb looked up, cached for instant reuse
 }
 
 const DEFAULTS: Persisted = {
   onboarded: false, meals: [], waterByDay: {}, weights: [], workouts: [], dayLogs: {}, profile: DEFAULT_PROFILE,
   favourites: [], challenges: [], avatar: { kind: 'initial' }, bannerUri: null, premium: false,
-  plan: null, planStartedAt: null, planChat: [], reminders: { water: false, meals: false, plan: false }, openDays: [],
+  plan: null, planStartedAt: null, planChat: [], reminders: { water: false, meals: false, plan: false }, openDays: [], customFoods: [],
 };
 
 type State = Persisted & {
@@ -108,6 +112,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
             reminders: { ...DEFAULTS.reminders, ...(s.reminders ?? {}) },
             onboarded: s.onboarded ?? Boolean(s.profile?.name && s.profile.name !== 'VYBE Athlete'),
             workouts: (s.workouts ?? []).map((w: Workout) => ({ ...w, kcal: w.kcal ?? 0 })),
+            // Old single 'snack' category → morning or evening snack by when it was eaten
+            meals: (s.meals ?? []).map((m: Meal) => (m.category as string) === 'snack'
+              ? { ...m, category: new Date(m.eatenAt).getHours() < 13 ? 'morning_snack' : 'evening_snack' } : m),
           });
         }
       } catch {}

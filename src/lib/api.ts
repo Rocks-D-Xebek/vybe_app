@@ -55,7 +55,13 @@ export interface Plan {
   rules: string[];
 }
 
+export interface FoodInfo {
+  name: string; per100: { kcal: number; p: number; c: number; f: number; fib: number; sug: number; na: number };
+  units: Record<string, number>; defaultUnit: string; defaultQty: number;
+}
+
 export const api = {
+  foodInfo: (name: string) => call<FoodInfo>('food_info', { name }),
   coachChat: (messages: ChatMsg[], userContext: object) =>
     call<{ reply: string }>('coach_chat', { messages: messages.slice(-30), userContext }),
   scanFood: (imageBase64: string, mealCategory: string) =>

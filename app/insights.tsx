@@ -25,7 +25,7 @@ export default function Insights() {
   const maxCal = Math.max(app.profile.calorieTarget, ...days.map(d => d.calories), 1);
 
   // Meal timing intelligence (blueprint 7.F) — computed from actual eatenAt times
-  const byCat = (cat: string) => app.meals.filter(m => m.category === cat).slice(-30);
+  const byCat = (cat: string) => app.meals.filter(m => m.category === cat && !m.timeApprox).slice(-30);
   const avgTime = (cat: string) => {
     const ms = byCat(cat);
     if (ms.length < 2) return null;

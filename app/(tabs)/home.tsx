@@ -10,7 +10,7 @@ import { useApp, Mood, Meal, WorkoutPart } from '../../src/store/AppStore';
 import { Logo, GradientRing, Section, Pill, Sheet, Choice, Crown } from '../../src/components/ui';
 import { MyAvatar, NutritionFacts, LevelBar } from '../../src/components/vybe';
 import { IMG } from '../../src/lib/images';
-import { timeAwarePrompt, formatTime, dayKey } from '../../src/lib/dates';
+import { timeAwarePrompt, formatTime, dayKey, SLOTS, slotInfo } from '../../src/lib/dates';
 import { ACTIVITIES, QUICK, kcalFor, kcalForParts, iconOf } from '../../src/lib/workouts';
 
 const MOODS: { key: Mood; emoji: string; label: string }[] = [
@@ -207,37 +207,58 @@ export default function Home() {
             </View>
           )}
 
-          {/* Today's meals */}
+          {/* Today's meals, one card per slot (log any slot at any time) */}
           <View>
-            <Section title="Today's Meals" action="Add" onAction={() => router.push('/scan')} />
-            {meals.length === 0 ? (
-              <Pressable onPress={() => router.push('/scan')} style={[card(colors), { flexDirection: 'row', alignItems: 'center', gap: 14 }]}>
-                <Image source={IMG.emptyMeals} style={{ width: 76, height: 76, borderRadius: 16 }} />
+            <Section title="Today's Meals" />
+            {meals.length === 0 && (
+              <Pressable onPress={() => router.push('/scan')} style={[card(colors), { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 }]}>
+                <Image source={IMG.emptyMeals} style={{ width: 64, height: 64, borderRadius: 16 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }}>Plate's empty… for now</Text>
-                  <Text style={{ color: colors.sub, fontSize: 13, marginTop: 4 }}>Snap it, scan the barcode or just type what you ate.</Text>
+                  <Text style={{ color: colors.sub, fontSize: 13, marginTop: 4 }}>Search, snap, scan or type. Forgot earlier meals? Add them anytime.</Text>
                 </View>
               </Pressable>
-            ) : (
-              <View style={card(colors)}>
-                {meals.map((m, i) => (
-                  <Pressable key={m.id} onPress={() => setMealOpen(m)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12,
-                    borderTopWidth: i ? 1 : 0, borderTopColor: colors.border }}>
-                    <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
-                      <Text style={{ fontSize: 18 }}>{{ breakfast: '🍳', lunch: '🍛', dinner: '🍲', snack: '🥨' }[m.category]}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ color: colors.text, fontWeight: '800' }} numberOfLines={1}>{m.items.map(x => x.name).join(', ')}</Text>
-                      <Text style={{ color: colors.sub, fontSize: 12, marginTop: 2 }}>
-                        {formatTime(m.eatenAt)} · P {Math.round(m.proteinG)}g · C {Math.round(m.carbsG)}g · F {Math.round(m.fatG)}g · Fibre {Math.round(m.fiberG ?? 0)}g
-                      </Text>
-                    </View>
-                    <Text style={{ color: colors.text, fontWeight: '900' }}>{Math.round(m.totalCalories)}</Text>
-                    <Ionicons name="chevron-forward" size={16} color={colors.sub} />
-                  </Pressable>
-                ))}
-              </View>
             )}
+            <View style={{ gap: 10 }}>
+              {SLOTS.map(sl => {
+                const list = meals.filter(m => m.category === sl.key);
+                const kcal = list.reduce((t, m) => t + m.totalCalories, 0);
+                return (
+                  <View key={sl.key} style={[card(colors), { paddingVertical: 12 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.surface2, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ fontSize: 18 }}>{sl.emoji}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: colors.text, fontWeight: '900' }}>{sl.label}</Text>
+                        <Text style={{ color: colors.sub, fontSize: 12 }}>{list.length ? `${Math.round(kcal)} kcal` : sl.window}</Text>
+                      </View>
+                      <Pressable onPress={() => router.push({ pathname: '/scan', params: { slot: sl.key } })} hitSlop={8}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: list.length ? colors.surface2 : colors.lime,
+                          borderRadius: 12, paddingHorizontal: 12, paddingVertical: 7 }}>
+                        <Ionicons name="add" size={16} color={list.length ? colors.text : colors.onAccent} />
+                        <Text style={{ color: list.length ? colors.text : colors.onAccent, fontWeight: '900', fontSize: 13 }}>Add</Text>
+                      </Pressable>
+                    </View>
+                    {list.map(m => (
+                      <Pressable key={m.id} onPress={() => setMealOpen(m)} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10,
+                        paddingTop: 10, borderTopWidth: 1, borderTopColor: colors.border }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.text, fontWeight: '700' }} numberOfLines={2}>
+                            {m.items.map(x => `${x.name} (${x.quantity})`).join(', ')}
+                          </Text>
+                          <Text style={{ color: colors.sub, fontSize: 12, marginTop: 2 }}>
+                            P {Math.round(m.proteinG)}g · C {Math.round(m.carbsG)}g · F {Math.round(m.fatG)}g · Fibre {Math.round(m.fiberG ?? 0)}g
+                          </Text>
+                        </View>
+                        <Text style={{ color: colors.text, fontWeight: '900' }}>{Math.round(m.totalCalories)}</Text>
+                        <Ionicons name="chevron-forward" size={16} color={colors.sub} />
+                      </Pressable>
+                    ))}
+                  </View>
+                );
+              })}
+            </View>
           </View>
 
           {/* Today's workouts */}
@@ -310,7 +331,7 @@ export default function Home() {
       </ScrollView>
 
       {/* Meal details */}
-      <Sheet visible={!!mealOpen} onClose={() => setMealOpen(null)} title={mealOpen ? `${mealOpen.category[0].toUpperCase()}${mealOpen.category.slice(1)} · ${formatTime(mealOpen.eatenAt)}` : ''}>
+      <Sheet visible={!!mealOpen} onClose={() => setMealOpen(null)} title={mealOpen ? `${slotInfo(mealOpen.category).label}${mealOpen.timeApprox ? '' : ` · ${formatTime(mealOpen.eatenAt)}`}` : ''}>
         {mealOpen && (
           <ScrollView style={{ maxHeight: 520 }}>
             {mealOpen.items.map((it, i) => (

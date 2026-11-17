@@ -188,7 +188,7 @@ export default function Profile() {
       {/* Reminders */}
       <View style={card(colors)}>
         <Text style={title(colors)}>Smart reminders</Text>
-        {([['water', 'Water breaks', '5 gentle nudges between 10 AM and 7 PM'], ['meals', 'Meal logging', 'Breakfast, lunch & dinner'],
+        {([['water', 'Water breaks', '5 gentle nudges between 10 AM and 7 PM'], ['meals', 'Meal logging', 'Breakfast, snacks, lunch & dinner (5 a day)'],
           ['plan', "Today's plan step", '7 AM, when you have a plan']] as const).map(([k, l, d]) => (
           <View key={k} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}>
             <View style={{ flex: 1 }}>

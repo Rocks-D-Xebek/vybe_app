@@ -45,6 +45,7 @@ switch ($in['action'] ?? '') {
     case 'fridge_analyze': fridge_analyze($in); break;
     case 'coach_chat':     coach_chat($in); break;
     case 'food_text':      food_text($in); break;
+    case 'food_info':      food_info($in); break;
     case 'food_label':     food_label($in); break;
     case 'plan_chat':      plan_chat($in); break;
     case 'avatar_makeover': avatar_makeover($in); break;
@@ -103,6 +104,44 @@ empty list for real food.
 TXT;
     $r = gemini_json($MODEL_FAST, $prompt, [['role' => 'user', 'parts' => [['text' => $text]]]]);
     ok(finish_food($r));
+}
+
+/** Nutrition per 100 g + household portion sizes for ONE food the built-in list doesn't have. */
+function food_info(array $in): void {
+    global $MODEL_FAST;
+    $name = trim(mb_substr((string)($in['name'] ?? ''), 0, 120));
+    if ($name === '') fail(400, 'Food name required');
+    $prompt = <<<TXT
+You are a nutrition database for an Indian fitness app. For the ONE food the user names, return typical values
+for the food as normally eaten (cooked/prepared) in India. Return STRICT JSON only:
+{"name":string,"per100":{"kcal":number,"p":number,"c":number,"f":number,"fib":number,"sug":number,"na":number},
+ "units":{UNIT:grams},"defaultUnit":string,"defaultQty":number}
+per100 = per 100 g: kcal, protein g, carbs g, fat g, fibre g, sugar g, sodium mg.
+units: only portion words that make sense for this food, from: piece, katori, bowl, plate, cup, glass, tbsp, tsp,
+slice, handful, pack, scoop, can - each mapped to its typical weight in grams (a katori is usually 120-150 g, a bowl
+200-250 g, a glass 250 ml). defaultUnit = the way people usually count it; defaultQty usually 1.
+"name" = a clean, properly capitalised food name. If it is not a food, return {"name":"","per100":null}.
+TXT;
+    $r = gemini_json($MODEL_FAST, $prompt, [['role' => 'user', 'parts' => [['text' => $name]]]]);
+    if (empty($r['name']) || !is_array($r['per100'] ?? null)) fail(422, "I don't know \"$name\" as a food. Try another name.");
+    $n = $r['per100'];
+    $units = [];
+    foreach ((array)($r['units'] ?? []) as $u => $g) {
+        if (preg_match('/^[a-z]{1,10}$/', (string)$u) && (float)$g > 0 && (float)$g < 3000) $units[$u] = round((float)$g, 1);
+    }
+    $def = (string)($r['defaultUnit'] ?? '');
+    if (!isset($units[$def])) $def = $units ? array_key_first($units) : 'g';
+    ok([
+        'name' => mb_substr((string)$r['name'], 0, 80),
+        'per100' => [
+            'kcal' => max(0, (float)($n['kcal'] ?? 0)), 'p' => max(0, (float)($n['p'] ?? 0)), 'c' => max(0, (float)($n['c'] ?? 0)),
+            'f' => max(0, (float)($n['f'] ?? 0)), 'fib' => max(0, (float)($n['fib'] ?? 0)), 'sug' => max(0, (float)($n['sug'] ?? 0)),
+            'na' => max(0, (float)($n['na'] ?? 0)),
+        ],
+        'units' => (object)$units,
+        'defaultUnit' => $def,
+        'defaultQty' => $def === 'g' ? 100 : max(0.5, (float)($r['defaultQty'] ?? 1)),
+    ]);
 }
 
 /** Photo of a packet's nutrition table + how much the user ate. */
