@@ -243,7 +243,8 @@ function img_part(string $b64): array {
 /** Simple per-IP limit, stored outside the web root (system temp dir). */
 function rate_limit(int $perHour): void {
     if ($perHour <= 0) return;
-    $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+    // Behind Cloudflare, REMOTE_ADDR is Cloudflare's server – the real phone IP is in CF-Connecting-IP.
+    $ip = $_SERVER['HTTP_CF_CONNECTING_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'unknown';
     $file = sys_get_temp_dir() . '/vybe_rl_' . md5($ip);
     $now = time();
     $hits = [];
