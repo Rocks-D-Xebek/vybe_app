@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export type ThemeMode = 'dark' | 'light' | 'system';
 
 const dark = {
-  bg: '#0A0A10', surface: '#14141D', surface2: '#1E1E2C',
+  bg: '#07070B', surface: '#111118', surface2: '#1C1C28',
   border: 'rgba(255,255,255,0.09)', text: '#F4F4F8', sub: '#9A9AB0',
   lime: '#C8FF00', purple: '#A855F7', magenta: '#FF3EA5', cyan: '#22E4FF',
   onAccent: '#0A0A10', danger: '#FF5C5C', success: '#4ADE80',
@@ -19,6 +19,7 @@ const light = {
 };
 
 export const space = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 };
+export const FONT = { marker: 'PermanentMarker_400Regular' };
 export type Colors = typeof dark;
 
 const Ctx = createContext<{

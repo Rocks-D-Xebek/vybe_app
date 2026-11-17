@@ -27,13 +27,20 @@ Needs an upload key and an `.aab` file — use EAS Build (`npx eas-cli build -p 
 ## What works now
 | Feature | Status |
 |---|---|
-| Home: calories/macros ring, water, weight, streak, today's meals | ✅ real data, saved on the phone |
-| Food scan → review → save (Gemini) | ✅ via `vybe-api.php` |
+| Home: progress ring, water (+/−), workouts, sleep & mood, weight, meals, 7-day challenge | ✅ real data, saved on the phone |
+| Scan screen: AI detected foods → fix portions / remove / add → save with meal time | ✅ via `vybe-api.php` |
 | Mr. Vyb chat + Fridge Check | ✅ via `vybe-api.php` |
 | Insights: weekly calories, meal timing, weight trend | ✅ from your logs |
 | Dark / Light / System theme | ✅ |
-| Race, Community | 🚧 preview with sample data (Phases 4–5) |
+| Race (podium, badges, live countdown), Community | 🚧 preview with sample data (Phases 4–5) |
 | Login + cloud sync, Health Connect steps, Premium | 🔜 next phases |
+
+## Artwork
+All images in `assets/images/` were generated with Cloudflare Workers AI (FLUX.2) by `scripts/gen-images.mjs`.
+To make new ones, set `CF_ACCOUNT_ID` and `CF_AI_TOKEN` as environment variables, add a prompt to the script, then:
+```bash
+node scripts/gen-images.mjs my-new-image
+```
 
 ## Change things quickly
 - Colours / look: `src/theme/ThemeContext.tsx`

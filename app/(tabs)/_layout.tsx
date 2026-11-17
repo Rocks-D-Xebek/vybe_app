@@ -1,70 +1,39 @@
 import React from 'react';
-import { Tabs, router } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../src/theme/ThemeContext';
-import { useApp } from '../../src/store/AppStore';
 
-function TabIcon({ emoji, focused, color }: { emoji: string; focused: boolean; color: string }) {
-  return (
-    <View style={{
-      width: 44, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
-      backgroundColor: focused ? color + '22' : 'transparent',
-    }}>
-      <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.45 }}>{emoji}</Text>
-    </View>
-  );
-}
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
+const TABS: { name: string; title: string; icon: IconName; iconActive: IconName }[] = [
+  { name: 'home', title: 'Home', icon: 'home-outline', iconActive: 'home' },
+  { name: 'coach', title: 'Coach', icon: 'hardware-chip-outline', iconActive: 'hardware-chip' },
+  { name: 'race', title: 'Race', icon: 'trophy-outline', iconActive: 'trophy' },
+  { name: 'community', title: 'Community', icon: 'people-outline', iconActive: 'people' },
+  { name: 'profile', title: 'Profile', icon: 'person-outline', iconActive: 'person' },
+];
 
 export default function TabsLayout() {
   const { colors } = useTheme();
-  const { profile } = useApp();
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs screenOptions={{
+      headerShown: false,
       tabBarStyle: {
-        backgroundColor: colors.surface, borderTopColor: colors.border,
-        height: 84, paddingBottom: 22, paddingTop: 6,
+        backgroundColor: colors.surface, borderTopColor: colors.purple + '55', borderTopWidth: 1,
+        height: 62 + insets.bottom, paddingBottom: insets.bottom + 6, paddingTop: 6,
       },
       tabBarActiveTintColor: colors.lime,
       tabBarInactiveTintColor: colors.sub,
-      tabBarLabelStyle: { fontWeight: '800', fontSize: 10, letterSpacing: 0.5 },
-      headerStyle: { backgroundColor: colors.bg },
-      headerTintColor: colors.text,
-      headerTitleStyle: { fontWeight: '900', letterSpacing: 3, fontSize: 17 },
-      headerShadowVisible: false,
+      tabBarLabelStyle: { fontWeight: '700', fontSize: 11 },
     }}>
-      <Tabs.Screen name="home" options={{
-        title: 'VYBE',
-        tabBarIcon: p => <TabIcon emoji="🏠" focused={p.focused} color={colors.lime} />,
-        headerRight: () => (
-          <Pressable onPress={() => router.push('/profile')} style={{ marginRight: 16 }}>
-            <View style={{
-              width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: colors.lime,
-            }}>
-              <Text style={{ color: colors.onAccent, fontWeight: '900', fontSize: 14 }}>
-                {profile.name.slice(0, 1).toUpperCase()}
-              </Text>
-            </View>
-          </Pressable>
-        ),
-      }} />
-      <Tabs.Screen name="coach" options={{
-        title: 'COACH',
-        tabBarIcon: p => <TabIcon emoji="🤖" focused={p.focused} color={colors.lime} />,
-      }} />
-      <Tabs.Screen name="race" options={{
-        title: 'RACE',
-        tabBarIcon: p => <TabIcon emoji="🏁" focused={p.focused} color={colors.lime} />,
-      }} />
-      <Tabs.Screen name="community" options={{
-        title: 'COMMUNITY',
-        tabBarIcon: p => <TabIcon emoji="👥" focused={p.focused} color={colors.lime} />,
-      }} />
-      <Tabs.Screen name="insights" options={{
-        title: 'INSIGHTS',
-        tabBarIcon: p => <TabIcon emoji="📊" focused={p.focused} color={colors.lime} />,
-      }} />
+      {TABS.map(t => (
+        <Tabs.Screen key={t.name} name={t.name} options={{
+          title: t.title,
+          tabBarIcon: ({ focused, color }) => <Ionicons name={focused ? t.iconActive : t.icon} size={24} color={color as string} />,
+        }} />
+      ))}
     </Tabs>
   );
 }

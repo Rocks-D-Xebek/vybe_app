@@ -16,12 +16,15 @@ header('Cache-Control: no-store');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(204); exit; }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { fail(405, 'Use POST'); }
 
+$T0 = microtime(true);   // whole request must finish before Cloudflare's 100 s timeout
+
 // ---------- Config ----------
 $config = file_exists(__DIR__ . '/config.php') ? require __DIR__ . '/config.php' : [];
 $API_KEY      = getenv('GEMINI_API_KEY') ?: ($config['GEMINI_API_KEY'] ?? '');
 $COACH_NAME   = $config['COACH_NAME']   ?? 'Mr. Vyb';
-$MODEL_FAST   = $config['MODEL_FAST']   ?? 'gemini-2.5-flash';
-$MODEL_STRONG = $config['MODEL_STRONG'] ?? 'gemini-2.5-pro';
+$MODEL_FAST   = $config['MODEL_FAST']   ?? 'gemini-3.6-flash';
+$MODEL_STRONG = $config['MODEL_STRONG'] ?? 'gemini-3.8-flash';
+$MODEL_BACKUP = $config['MODEL_BACKUP'] ?? 'gemini-3.5-flash-lite'; // used when the main model fails
 $RATE_LIMIT   = (int)($config['RATE_LIMIT_PER_HOUR'] ?? 60);
 if (!$API_KEY) { fail(500, 'Server is missing GEMINI_API_KEY'); }
 
@@ -53,11 +56,12 @@ You are a nutrition estimation engine. Analyse the food photo and return STRICT 
 Rules: a photo cannot reliably reveal exact food weight, hidden oil or precise ingredients.
 Use conservative confidence and always explain limitations in uncertaintyNote.
 Indian dishes are common – name them specifically (e.g. "Paneer butter masala", "Masala dosa").
+For packaged snacks (chips, biscuits, namkeen), read the brand/label if visible and estimate per visible portion or pack.
 If there is no food in the photo, return {"items":[],"overallConfidence":"low","uncertaintyNote":"No food detected"}.
 TXT;
     $parts = [img_part($img), ['text' => "Meal category: $cat. Estimate this meal."]];
     $result = gemini_json($MODEL_FAST, $prompt, [['role' => 'user', 'parts' => $parts]]);
-    if (($result['overallConfidence'] ?? '') === 'low' && !empty($result['items'])) {
+    if (($result['overallConfidence'] ?? '') === 'low' && !empty($result['items']) && microtime(true) - $GLOBALS['T0'] < 35) {
         $retry = gemini_json($MODEL_STRONG, $prompt, [['role' => 'user', 'parts' => $parts]], false);
         if ($retry) { $result = $retry; $result['retriedWithPro'] = true; }
     }
@@ -125,36 +129,65 @@ TXT;
 // ================= Helpers =================
 
 function gemini_call(string $model, string $system, array $contents, array $genConfig, bool $failHard = true): ?string {
-    global $API_KEY;
-    $payload = [
+    global $MODEL_BACKUP;
+    $payload = json_encode([
         'systemInstruction' => ['parts' => [['text' => $system]]],
         'contents' => $contents,
         'generationConfig' => $genConfig,
-    ];
+    ]);
+    // Reliability: retry the main model on temporary errors, then switch to the backup model.
+    $plan = [[$model, 0], [$model, 1]];
+    if ($MODEL_BACKUP && $MODEL_BACKUP !== $model) { $plan[] = [$MODEL_BACKUP, 0]; }
+    $deadline = $GLOBALS['T0'] + 85;   // shared budget, stays under Cloudflare's 100 s limit
+    $last = [0, '', '', $model];
+
+    foreach ($plan as [$m, $wait]) {
+        $left = $deadline - microtime(true);
+        if ($left < 8) break;
+        if ($wait) sleep(2);
+        [$status, $resp, $curlErr] = gemini_http($m, $payload, (int)min(40, $left));
+        if ($resp && $status < 400) {
+            $data = json_decode($resp, true);
+            $text = '';
+            // Newer Gemini models can return "thought" parts – keep only the real answer
+            foreach ($data['candidates'][0]['content']['parts'] ?? [] as $p) {
+                if (!empty($p['thought'])) continue;
+                $text .= $p['text'] ?? '';
+            }
+            if ($text !== '') return $text;
+            $reason = $data['candidates'][0]['finishReason'] ?? ($data['promptFeedback']['blockReason'] ?? 'unknown');
+            if (in_array($reason, ['SAFETY', 'PROHIBITED_CONTENT', 'BLOCKLIST'])) {
+                if ($failHard) fail(422, 'Mr. Vyb can\'t help with that one.');
+                return null;
+            }
+            $last = [500, '', "empty answer ($reason)", $m];
+            continue;
+        }
+        error_log("VYBE gemini $m error $status $curlErr: " . substr((string)$resp, 0, 300));
+        $last = [$status, (string)$resp, $curlErr, $m];
+        // Key problems won't fix themselves – stop immediately
+        if ($status === 401 || $status === 403 || ($status === 400 && stripos((string)$resp, 'API key') !== false)) break;
+    }
+    if ($failHard) fail(500, gemini_error_message(...$last));
+    return null;
+}
+
+function gemini_http(string $model, string $payload, int $timeout): array {
+    global $API_KEY;
     $ch = curl_init("https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent");
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
         CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'x-goog-api-key: ' . $API_KEY],
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_TIMEOUT => 80,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => max(5, $timeout),
     ]);
     $resp = curl_exec($ch);
-    $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
     curl_close($ch);
-    if (!$resp || $status >= 400) {
-        error_log("VYBE gemini error $status: " . substr((string)$resp, 0, 500));
-        if ($failHard) fail(502, $status == 429 ? 'Mr. Vyb is busy right now. Try again in a minute.' : 'AI service error');
-        return null;
-    }
-    $data = json_decode($resp, true);
-    $text = '';
-    foreach ($data['candidates'][0]['content']['parts'] ?? [] as $p) { $text .= $p['text'] ?? ''; }
-    if ($text === '') {
-        if ($failHard) fail(502, 'AI returned no answer');
-        return null;
-    }
-    return $text;
+    return [$status, $resp === false ? '' : $resp, $err];
 }
 
 function gemini_json(string $model, string $system, array $contents, bool $failHard = true): ?array {
@@ -164,10 +197,21 @@ function gemini_json(string $model, string $system, array $contents, bool $failH
     $text = trim(str_replace(['```json', '```'], '', $text));
     $json = json_decode($text, true);
     if (!is_array($json)) {
-        if ($failHard) fail(502, 'Could not read AI response');
+        if ($failHard) fail(500, 'Could not read AI response');
         return null;
     }
     return $json;
+}
+
+/** Human-readable reason, without ever exposing the API key. */
+function gemini_error_message(int $status, string $resp, string $curlErr, string $model): string {
+    if ($status === 0) return 'Server could not reach Google AI' . ($curlErr ? " ($curlErr)" : '');
+    $msg = json_decode($resp, true)['error']['message'] ?? '';
+    if ($status === 429) return 'Mr. Vyb is busy right now (Gemini quota). Try again in a minute.';
+    if ($status === 404) return "Gemini model '$model' not found – check MODEL_FAST / MODEL_STRONG in config.php";
+    if (stripos($msg, 'API key') !== false || $status === 403)
+        return 'Gemini API key rejected – put a valid key in config.php';
+    return "Gemini error $status" . ($msg ? ': ' . mb_substr($msg, 0, 160) : '');
 }
 
 function normalize_item($i): array {

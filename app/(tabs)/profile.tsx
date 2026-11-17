@@ -1,24 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
-import { useTheme, ThemeMode } from '../src/theme/ThemeContext';
-import { useApp } from '../src/store/AppStore';
-import { Card } from '../src/components/Card';
-import { SectionTitle } from '../src/components/SectionTitle';
-import { Chip } from '../src/components/Chip';
+import { useTheme, ThemeMode } from '../../src/theme/ThemeContext';
+import { useApp } from '../../src/store/AppStore';
+import { Card } from '../../src/components/Card';
+import { SectionTitle } from '../../src/components/SectionTitle';
+import { Chip } from '../../src/components/Chip';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Logo, Avatar } from '../../src/components/ui';
 
 export default function Profile() {
   const { colors, mode, setMode } = useTheme();
   const { profile, updateProfile, meals, streak } = useApp();
   const s = st(colors);
   const [name, setName] = useState(profile.name);
+  const insets = useSafeAreaInsets();
 
   return (
-    <ScrollView style={s.root} contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 18 }}>
+    <ScrollView style={s.root} contentContainerStyle={{ padding: 16, paddingTop: insets.top + 8, paddingBottom: 40, gap: 18 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Logo size={30} tagline={false} />
+        <View style={{ flex: 1 }} />
+        <Text style={{ color: colors.lime, fontWeight: '900', fontSize: 16 }}>Profile</Text>
+      </View>
       {/* Identity */}
       <View style={{ alignItems: 'center', gap: 8, paddingVertical: 8 }}>
-        <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: colors.lime, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ color: colors.onAccent, fontSize: 34, fontWeight: '900' }}>{profile.name[0].toUpperCase()}</Text>
-        </View>
+        <Avatar name={profile.name} size={88} ring={colors.purple} />
         <TextInput style={{ color: colors.text, fontSize: 22, fontWeight: '900', textAlign: 'center', minWidth: 180 }}
           value={name} onChangeText={setName} onBlur={() => updateProfile({ name })} />
         <Text style={{ color: colors.sub, fontWeight: '600' }}>{profile.goal}</Text>
@@ -34,6 +42,18 @@ export default function Profile() {
           </Card>
         ))}
       </View>
+
+      {/* Insights entry */}
+      <Pressable onPress={() => router.push('/insights')}>
+        <Card glow="lime" style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Ionicons name="stats-chart" size={26} color={colors.lime} />
+          <View style={{ flex: 1 }}>
+            <Text style={{ color: colors.text, fontWeight: '900', fontSize: 16 }}>My Insights</Text>
+            <Text style={{ color: colors.sub, fontSize: 12, marginTop: 2 }}>Weekly calories, meal timing, weight trend</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.sub} />
+        </Card>
+      </Pressable>
 
       {/* Theme */}
       <Card>

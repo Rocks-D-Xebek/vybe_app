@@ -1,64 +1,58 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState } from 'react';
+import { View, Text, TextInput, ImageBackground, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { Redirect, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useTheme } from '../src/theme/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme, FONT } from '../src/theme/ThemeContext';
+import { useApp } from '../src/store/AppStore';
 import { GradientButton } from '../src/components/GradientButton';
-
-const FEATURES = [
-  ['📷', 'Snap your meal — AI does the math'],
-  ['🤖', 'Mr. Vyb, your adaptive AI coach'],
-  ['🥬', 'Fridge Check → healthy meals from what you have'],
-  ['📊', '90-day meal-timing intelligence'],
-  ['🏁', 'Races & leaderboards that keep you hooked'],
-];
+import { Logo, Bolt } from '../src/components/ui';
+import { IMG } from '../src/lib/images';
 
 export default function Welcome() {
-  const { colors, isDark } = useTheme();
-  const s = st(colors);
+  const { colors } = useTheme();
+  const app = useApp();
+  const insets = useSafeAreaInsets();
+  const [name, setName] = useState('');
+
+  if (app.onboarded) return <Redirect href="/(tabs)/home" />;
+
+  function start() {
+    app.finishOnboarding(name);
+    router.replace('/(tabs)/home');
+  }
 
   return (
-    <View style={s.root}>
-      <LinearGradient
-        colors={isDark ? ['rgba(168,85,247,0.35)', 'transparent'] : ['rgba(124,58,237,0.15)', 'transparent']}
-        style={StyleSheet.absoluteFill}
-      />
-      <View style={s.glowDot} />
-      <Text style={s.wordmark}>VYBE</Text>
-      <Text style={s.tagline}>MOVE{'\n'}DIFFERENT.</Text>
-      <Text style={s.body}>
-        Eat smarter, move more, build habits that actually stick — with an AI coach
-        that gets you.
-      </Text>
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#000' }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ImageBackground source={IMG.welcomeHero} style={{ flex: 1 }} resizeMode="cover">
+        <LinearGradient colors={['rgba(0,0,0,0.55)', 'rgba(0,0,0,0.1)', 'rgba(7,7,11,0.92)', '#07070B']}
+          locations={[0, 0.3, 0.62, 1]} style={{ flex: 1 }}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, paddingTop: insets.top + 24, paddingBottom: insets.bottom + 24 }}
+            keyboardShouldPersistTaps="handled">
+            <Logo size={56} />
+            <View style={{ flex: 1, minHeight: 200 }} />
 
-      <View style={{ gap: 12, marginTop: 28, width: '100%' }}>
-        {FEATURES.map(([e, t]) => (
-          <View key={t} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <Text style={{ fontSize: 20 }}>{e}</Text>
-            <Text style={{ color: colors.text, fontSize: 14, fontWeight: '600', flex: 1 }}>{t}</Text>
-          </View>
-        ))}
-      </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Bolt size={22} />
+              <Text style={{ fontFamily: FONT.marker, color: colors.lime, fontSize: 22 }}>Your AI coach, always with you</Text>
+            </View>
+            <Text style={{ color: '#E6E6EE', fontSize: 15, lineHeight: 22, marginTop: 8 }}>
+              Snap meals, chat with Mr. Vyb, race your friends and watch your habits level up.
+            </Text>
 
-      <View style={{ marginTop: 'auto', width: '100%', gap: 14 }}>
-        <GradientButton title="START MY JOURNEY →" onPress={() => router.replace('/(tabs)/home')} />
-        <Pressable onPress={() => router.replace('/(tabs)/home')}>
-          <Text style={{ color: colors.sub, textAlign: 'center', fontSize: 13, fontWeight: '600' }}>
-            I already have an account
-          </Text>
-        </Pressable>
-      </View>
-    </View>
+            <Text style={{ color: '#FFFFFF', fontWeight: '800', marginTop: 26, marginBottom: 8 }}>What should we call you?</Text>
+            <TextInput
+              value={name} onChangeText={setName} placeholder="Your first name" placeholderTextColor="#8A8AA0"
+              maxLength={24} returnKeyType="go" onSubmitEditing={start}
+              style={{ backgroundColor: 'rgba(17,17,24,0.9)', borderRadius: 16, borderWidth: 1.5, borderColor: colors.purple,
+                color: '#FFFFFF', fontSize: 17, fontWeight: '700', paddingHorizontal: 16, paddingVertical: 14 }} />
+
+            <View style={{ marginTop: 16 }}>
+              <GradientButton title="Start my journey" icon="arrow-forward" variant="neon" onPress={start} />
+            </View>
+          </ScrollView>
+        </LinearGradient>
+      </ImageBackground>
+    </KeyboardAvoidingView>
   );
 }
-
-const st = (c: any) => StyleSheet.create({
-  root: { flex: 1, padding: 24, paddingTop: 72, backgroundColor: c.bg },
-  glowDot: {
-    position: 'absolute', top: -80, right: -60, width: 260, height: 260, borderRadius: 130,
-    backgroundColor: c.purple, opacity: 0.28,
-  },
-  wordmark: { color: c.lime, fontSize: 15, fontWeight: '900', letterSpacing: 8 },
-  tagline: { color: c.text, fontSize: 52, fontWeight: '900', lineHeight: 54, marginTop: 18 },
-  body: { color: c.sub, fontSize: 15, lineHeight: 22, marginTop: 16 },
-});

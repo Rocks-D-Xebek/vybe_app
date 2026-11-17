@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { useTheme } from '../../src/theme/ThemeContext';
-import { useApp } from '../../src/store/AppStore';
-import { Card } from '../../src/components/Card';
-import { SectionTitle } from '../../src/components/SectionTitle';
-import { EmptyState } from '../../src/components/EmptyState';
-import { dayKey } from '../../src/lib/dates';
+import { useTheme } from '../src/theme/ThemeContext';
+import { useApp } from '../src/store/AppStore';
+import { Card } from '../src/components/Card';
+import { SectionTitle } from '../src/components/SectionTitle';
+import { EmptyState } from '../src/components/EmptyState';
+import { dayKey } from '../src/lib/dates';
+import { ScreenHeader } from '../src/components/ui';
 
 export default function Insights() {
   const { colors } = useTheme();
@@ -38,6 +39,8 @@ export default function Insights() {
   const proteinDays = days.filter(d => app.totalsFor(d.key).protein >= app.profile.proteinTarget * 0.8).length;
 
   return (
+    <View style={s.root}>
+    <ScreenHeader title="Insights" />
     <ScrollView style={s.root} contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 18 }}>
       <Card glow="purple">
         <SectionTitle label="This week’s calories" right={`target ~${(app.profile.calorieTarget * 7).toLocaleString()}`} />
@@ -102,6 +105,7 @@ export default function Insights() {
           ))}
       </Card>
     </ScrollView>
+    </View>
   );
 }
 

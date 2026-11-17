@@ -6,9 +6,14 @@ import { useTheme } from '../../src/theme/ThemeContext';
 import { useApp } from '../../src/store/AppStore';
 import { api, ChatMsg, FridgeResult } from '../../src/lib/api';
 import { dayKey } from '../../src/lib/dates';
+import { toUploadBase64 } from '../../src/lib/image';
 import { Card } from '../../src/components/Card';
 import { Chip } from '../../src/components/Chip';
 import { GradientButton } from '../../src/components/GradientButton';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ImageBackground } from 'react-native';
+import { IMG } from '../../src/lib/images';
+import { FONT } from '../../src/theme/ThemeContext';
 
 const SUGGESTIONS = ['Give me a 20-min no-equipment workout 🔥', 'How can I hit my protein goal today?', 'I missed my workout — help'];
 
@@ -17,6 +22,7 @@ export default function Coach() {
   const app = useApp();
   const s = st(colors);
   const listRef = useRef<FlatList>(null);
+  const insets = useSafeAreaInsets();
 
   const [tab, setTab] = useState<'chat' | 'fridge'>('chat');
   const [msgs, setMsgs] = useState<ChatMsg[]>([
@@ -38,6 +44,14 @@ export default function Coach() {
     calorieTarget: app.profile.calorieTarget,
     streak: app.streak(),
     mealsLoggedToday: app.todayMeals().length,
+    proteinTodayG: Math.round(app.totalsFor(dayKey()).protein),
+    proteinTargetG: app.profile.proteinTarget,
+    waterTodayL: +(app.waterMl / 1000).toFixed(2),
+    waterTargetL: app.profile.waterTargetMl / 1000,
+    activeMinutesToday: app.activeMinutes(),
+    sleepLastNightHrs: app.dayLogs[dayKey()]?.sleepHrs ?? 'not logged',
+    moodToday: app.dayLogs[dayKey()]?.mood ?? 'not logged',
+    name: app.profile.name,
   };
 
   async function ask(text: string, history = msgs) {
@@ -54,9 +68,9 @@ export default function Coach() {
   }
 
   async function addFridgePhotos() {
-    const r = await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.5, allowsMultipleSelection: true, selectionLimit: 3 });
+    const r = await ImagePicker.launchImageLibraryAsync({ quality: 0.8, allowsMultipleSelection: true, selectionLimit: 3 });
     if (r.canceled) return;
-    const imgs = r.assets.map(a => a.base64).filter(Boolean) as string[];
+    const imgs = await Promise.all(r.assets.map(a => toUploadBase64(a.uri)));
     setFridgeImgs(prev => [...prev, ...imgs].slice(0, 3));
   }
 
@@ -79,7 +93,20 @@ Suggest 3 healthy, tasty meals using these. Include calories, macros, and why ea
   }
 
   return (
-    <KeyboardAvoidingView style={s.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView style={[s.root, { paddingTop: insets.top }]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      {/* Mr. Vyb header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingTop: 8 }}>
+        <Image source={IMG.mrvyb} style={{ width: 52, height: 52, borderRadius: 26, borderWidth: 2, borderColor: colors.lime }} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: colors.text, fontSize: 20, fontWeight: '900' }}>Mr. Vyb</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.success }} />
+            <Text style={{ color: colors.sub, fontSize: 12 }}>Your AI coach · always on</Text>
+          </View>
+        </View>
+        <Text style={{ fontFamily: FONT.marker, color: colors.lime, fontSize: 15, transform: [{ rotate: '-6deg' }] }}>{'always\nwith you'}</Text>
+      </View>
+
       {/* Mode switch */}
       <View style={s.switchRow}>
         {(['chat', 'fridge'] as const).map(t => (
@@ -103,13 +130,16 @@ Suggest 3 healthy, tasty meals using these. Include calories, macros, and why ea
             keyExtractor={(_, i) => String(i)}
             ListFooterComponent={busy ? <Text style={{ color: colors.sub, fontSize: 12, marginLeft: 4 }}>Mr. Vyb is typing…</Text> : undefined}
             renderItem={({ item }) => (
-              <View style={[s.bubble, item.role === 'user' ? s.me : s.bot]}>
-                {item.role === 'model' && <Text style={{ color: colors.lime, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 3 }}>MR. VYB</Text>}
-                <Text style={{ color: item.role === 'user' ? colors.onAccent : colors.text, lineHeight: 20 }}>{item.text}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8, alignSelf: item.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                {item.role === 'model' && <Image source={IMG.mrvyb} style={{ width: 30, height: 30, borderRadius: 15 }} />}
+                <View style={[s.bubble, item.role === 'user' ? s.me : s.bot]}>
+                  {item.role === 'model' && <Text style={{ color: colors.lime, fontSize: 10, fontWeight: '900', letterSpacing: 2, marginBottom: 3 }}>MR. VYB</Text>}
+                  <Text style={{ color: item.role === 'user' ? colors.onAccent : colors.text, lineHeight: 20 }}>{item.text}</Text>
+                </View>
               </View>
             )}
           />
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 8 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingBottom: 8, alignItems: 'center' }}>
             {SUGGESTIONS.map(x => <Chip key={x} label={x} onPress={() => !busy && ask(x)} />)}
           </ScrollView>
           <View style={s.row}>
@@ -122,9 +152,16 @@ Suggest 3 healthy, tasty meals using these. Include calories, macros, and why ea
         </>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
-          <LinearGradient colors={[colors.purple + '33', colors.magenta + '22']} style={{ borderRadius: 20, padding: 18, borderWidth: 1, borderColor: colors.purple }}>
-            <Text style={{ color: colors.text, fontSize: 17, fontWeight: '900' }}>Fridge check! 👀</Text>
-            <Text style={{ color: colors.sub, marginTop: 6, lineHeight: 20 }}>
+          <View style={{ borderRadius: 22, overflow: 'hidden', borderWidth: 1.5, borderColor: colors.purple }}>
+            <ImageBackground source={IMG.fridgeHero} style={{ width: '100%', height: 170, justifyContent: 'flex-end' }} resizeMode="cover">
+              <LinearGradient colors={['transparent', 'rgba(7,7,11,0.9)']} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 90 }} />
+              <Text style={{ fontFamily: FONT.marker, color: '#FFFFFF', fontSize: 26, padding: 14, transform: [{ rotate: '-3deg' }] }}>
+                Fridge check! 👀
+              </Text>
+            </ImageBackground>
+          </View>
+          <LinearGradient colors={[colors.purple + '33', colors.magenta + '22']} style={{ borderRadius: 20, padding: 16, borderWidth: 1, borderColor: colors.purple }}>
+            <Text style={{ color: colors.text, lineHeight: 20 }}>
               Show me what’s in your fridge — photo up to 3 shelves. I’ll spot the ingredients, ask when I’m unsure, then we turn them into something healthy, tasty and on track with your goals.
             </Text>
           </LinearGradient>
@@ -171,7 +208,7 @@ Suggest 3 healthy, tasty meals using these. Include calories, macros, and why ea
 const st = (c: any) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   switchRow: { flexDirection: 'row', margin: 16, marginBottom: 4, backgroundColor: c.surface, borderRadius: 14, padding: 4, borderWidth: 1, borderColor: c.border },
-  bubble: { maxWidth: '82%', borderRadius: 18, padding: 12 },
+  bubble: { maxWidth: '78%', borderRadius: 18, padding: 12 },
   me: { alignSelf: 'flex-end', backgroundColor: c.lime, borderBottomRightRadius: 4 },
   bot: { alignSelf: 'flex-start', backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderBottomLeftRadius: 4 },
   row: { flexDirection: 'row', padding: 12, gap: 8 },
