@@ -3,10 +3,12 @@ name: Build Android App
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
     - uses: actions/checkout@v4
@@ -14,7 +16,8 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
+        cache: 'npm'
 
     - name: Setup Java
       uses: actions/setup-java@v4
@@ -22,21 +25,29 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Install Dependencies
-      run: npm install
+    - name: Setup Gradle cache
+      uses: gradle/actions/setup-gradle@v4
 
-    - name: Sync Capacitor
-      run: npx cap sync android
+    - name: Install dependencies
+      run: npm ci
 
-    - name: Make Gradle Wrapper Executable
-      run: chmod +x android/gradlew
+    - name: Typecheck
+      run: npx tsc --noEmit
 
-    - name: Build Android APK
+    # Generates the native android/ folder from app.json
+    - name: Expo prebuild
+      run: npx expo prebuild -p android --no-install --clean
+
+    # Release build = JS bundled inside the APK, so it runs without a dev server.
+    # Signed with the debug key: fine for installing on your phone, NOT for Google Play.
+    - name: Build release APK
       working-directory: ./android
-      run: ./gradlew assembleDebug
+      run: |
+        chmod +x gradlew
+        ./gradlew assembleRelease --no-daemon
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
-        name: app-debug
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        name: vybe-apk
+        path: android/app/build/outputs/apk/release/app-release.apk

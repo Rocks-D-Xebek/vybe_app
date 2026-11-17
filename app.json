@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "VYBE",
+    "slug": "vybe",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "vybe",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0A10",
+    "primaryColor": "#C8FF00",
+    "android": {
+      "package": "in.vibenews.vybe",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A10"
+      },
+      "permissions": ["CAMERA"],
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+    },
+    "ios": {
+      "bundleIdentifier": "in.vibenews.vybe"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VYBE uses photos to scan your meals and your fridge.",
+          "cameraPermission": "VYBE uses the camera to scan your meals and your fridge.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-router",
+      "expo-status-bar",
+      "expo-font"
+    ],
+    "extra": {
+      "apiUrl": "https://vibenews.in/backend/vybe-api"
+    }
+  }
+}
