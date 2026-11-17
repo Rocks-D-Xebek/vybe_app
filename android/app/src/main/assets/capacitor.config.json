@@ -1,0 +1,6 @@
+{
+	"appId": "in.vibenews.vybe",
+	"appName": "VYBE",
+	"webDir": "www",
+	"bundledWebRuntime": false
+}
