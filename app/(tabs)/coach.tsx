@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ImageBackground } from 'react-native';
 import { IMG } from '../../src/lib/images';
 import { FONT } from '../../src/theme/ThemeContext';
+import { PlanCoach } from '../../src/components/PlanCoach';
 
 const SUGGESTIONS = ['Give me a 20-min no-equipment workout 🔥', 'How can I hit my protein goal today?', 'I missed my workout — help'];
 
@@ -24,7 +25,7 @@ export default function Coach() {
   const listRef = useRef<FlatList>(null);
   const insets = useSafeAreaInsets();
 
-  const [tab, setTab] = useState<'chat' | 'fridge'>('chat');
+  const [tab, setTab] = useState<'chat' | 'plan' | 'fridge'>(app.plan ? 'plan' : 'chat');
   const [msgs, setMsgs] = useState<ChatMsg[]>([
     { role: 'model', text: "Yo, I'm Mr. Vyb ⚡ Your goals, my brain. What are we working on today?" },
   ]);
@@ -41,17 +42,21 @@ export default function Coach() {
     currentWeightKg: app.profile.currentWeightKg,
     targetWeightKg: app.profile.targetWeightKg,
     todayCalories: Math.round(app.totalsFor(dayKey()).calories),
-    calorieTarget: app.profile.calorieTarget,
+    calorieTarget: app.targets.calorieTarget,
     streak: app.streak(),
     mealsLoggedToday: app.todayMeals().length,
     proteinTodayG: Math.round(app.totalsFor(dayKey()).protein),
-    proteinTargetG: app.profile.proteinTarget,
+    proteinTargetG: app.targets.proteinTarget,
     waterTodayL: +(app.waterMl / 1000).toFixed(2),
-    waterTargetL: app.profile.waterTargetMl / 1000,
+    waterTargetL: app.targets.waterTargetMl / 1000,
     activeMinutesToday: app.activeMinutes(),
     sleepLastNightHrs: app.dayLogs[dayKey()]?.sleepHrs ?? 'not logged',
     moodToday: app.dayLogs[dayKey()]?.mood ?? 'not logged',
     name: app.profile.name,
+    fibreTodayG: Math.round(app.totalsFor(dayKey()).fiber),
+    caloriesBurnedToday: app.burnedKcal(),
+    activePlan: app.plan ? { title: app.plan.title, goal: app.plan.goal, targets: app.plan.targets,
+      today: app.plan.weekly.find(d => d.day === ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()]) } : 'none',
   };
 
   async function ask(text: string, history = msgs) {
@@ -109,19 +114,19 @@ Suggest 3 healthy, tasty meals using these. Include calories, macros, and why ea
 
       {/* Mode switch */}
       <View style={s.switchRow}>
-        {(['chat', 'fridge'] as const).map(t => (
+        {(['chat', 'plan', 'fridge'] as const).map(t => (
           <Pressable key={t} onPress={() => setTab(t)} style={{ flex: 1 }}>
             <LinearGradient colors={tab === t ? [colors.lime, colors.cyan] : ['transparent', 'transparent']}
               style={{ borderRadius: 12, paddingVertical: 10, alignItems: 'center' }}>
               <Text style={{ color: tab === t ? colors.onAccent : colors.sub, fontWeight: '900', fontSize: 13, letterSpacing: 1 }}>
-                {t === 'chat' ? '💬 CHAT' : '🥬 FRIDGE CHECK'}
+                {t === 'chat' ? '💬 CHAT' : t === 'plan' ? '👑 MY PLAN' : '🥬 FRIDGE'}
               </Text>
             </LinearGradient>
           </Pressable>
         ))}
       </View>
 
-      {tab === 'chat' ? (
+      {tab === 'plan' ? <PlanCoach /> : tab === 'chat' ? (
         <>
           <FlatList
             ref={listRef} data={msgs}

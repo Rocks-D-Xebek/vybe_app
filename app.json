@@ -14,8 +14,12 @@
       "adaptiveIcon": {
         "backgroundColor": "#0A0A10"
       },
-      "permissions": ["CAMERA"],
-      "blockedPermissions": ["android.permission.RECORD_AUDIO"]
+      "permissions": [
+        "CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "ios": {
       "bundleIdentifier": "in.vibenews.vybe"
@@ -35,7 +39,8 @@
       ],
       "expo-router",
       "expo-status-bar",
-      "expo-font"
+      "expo-font",
+      "expo-sharing"
     ],
     "extra": {
       "apiUrl": "https://vibenews.in/backend/vybe-api"

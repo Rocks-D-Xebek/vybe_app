@@ -27,13 +27,14 @@ Needs an upload key and an `.aab` file — use EAS Build (`npx eas-cli build -p 
 ## What works now
 | Feature | Status |
 |---|---|
-| Home: progress ring, water (+/−), workouts, sleep & mood, weight, meals, 7-day challenge | ✅ real data, saved on the phone |
-| Scan screen: AI detected foods → fix portions / remove / add → save with meal time | ✅ via `vybe-api.php` |
-| Mr. Vyb chat + Fridge Check | ✅ via `vybe-api.php` |
-| Insights: weekly calories, meal timing, weight trend | ✅ from your logs |
-| Dark / Light / System theme | ✅ |
-| Race (podium, badges, live countdown), Community | 🚧 preview with sample data (Phases 4–5) |
-| Login + cloud sync, Health Connect steps, Premium | 🔜 next phases |
+| Food logging 4 ways: photo, nutrition-label photo, barcode (Open Food Facts), type it ("2 chakodi and chai") | ✅ AI via `vybe-api.php` |
+| Full nutrition per meal: kcal, protein, carbs, fat, fibre, sugar, sodium; favourites & recents | ✅ |
+| Workouts: quick (average) or detailed breakdown, calories burned from body weight | ✅ on the phone |
+| XP & levels, Vybe Wrapped weekly share card, smart reminders | ✅ |
+| Solo challenges with unique badges | ✅ from your own logs |
+| Avatars, AI graffiti selfie banner (Gemini image) | ✅ via `vybe-api.php` |
+| Premium: Mr. Vyb plan builder + daily "today's step", Global Race | ✅ behind a testing switch until RevenueCat (phase 3) |
+| 1v1 / group challenges, friends, live video battles, login | 🔜 phase 2 (Supabase) |
 
 ## Artwork
 All images in `assets/images/` were generated with Cloudflare Workers AI (FLUX.2) by `scripts/gen-images.mjs`.

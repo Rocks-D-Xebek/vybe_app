@@ -27,6 +27,7 @@ function Root() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="scan" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="insights" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="wrapped" options={{ animation: 'slide_from_right' }} />
       </Stack>
     </>
   );
