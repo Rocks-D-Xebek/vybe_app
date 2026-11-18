@@ -10,7 +10,10 @@ The app works fully offline until these are set up. Do them in order. Each step 
 - ✅ `app.json` has the project URL + publishable key
 - ✅ Redirect URLs `vybe://**` and `exp://**` added
 - ⏳ Email: works with the sign-in **link** now; custom SMTP needed for 6-digit codes and more than a few emails per hour
-- ⏳ Google login, WhatsApp login, server config.php values, RevenueCat
+- ✅ Google login: Google Cloud project (VYBE admin Gmail) → consent screen "VYBE" (External, **Testing** mode) → web client
+  "VYBE Supabase login" → enabled in Supabase. Before launch: Google Auth Platform → Audience → **Publish app**
+  (until then only listed test users can sign in with Google)
+- ⏳ WhatsApp login, server config.php values, RevenueCat
 
 ## 1. Supabase (accounts, friends, challenges, backup)
 1. supabase.com → **New project** → name `vybe`, region **Mumbai (ap-south-1)**, save the database password somewhere safe.
