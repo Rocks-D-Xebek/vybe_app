@@ -84,6 +84,8 @@ type State = Persisted & {
   streak: () => number;
   openStreak: () => number;
   xp: () => number;
+  exportData: () => Persisted;
+  mergeFromCloud: (remote: Partial<Persisted>) => void;
 };
 
 const Ctx = createContext<State>(null as any);
@@ -162,6 +164,35 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   const value: State = {
+    exportData: () => data,
+    // Union of phone + cloud data: nothing logged on either side is lost.
+    mergeFromCloud: remote => setData(d => {
+      const byId = <T,>(a: T[] = [], b: T[] = [], key: (x: T) => string) => {
+        const m = new Map<string, T>(); [...a, ...b].forEach(x => m.set(key(x), x)); return [...m.values()];
+      };
+      const maxRec = (a: Record<string, number> = {}, b: Record<string, number> = {}) => {
+        const out = { ...a }; for (const k in b) out[k] = Math.max(out[k] ?? 0, b[k]); return out;
+      };
+      const r = remote as Persisted;
+      return {
+        ...d,
+        onboarded: d.onboarded || !!r.onboarded,
+        meals: byId(r.meals, d.meals, m => m.id),
+        workouts: byId(r.workouts, d.workouts, w => w.id),
+        weights: byId(r.weights, d.weights, w => String(w.at)).sort((a, b) => b.at - a.at),
+        waterByDay: maxRec(r.waterByDay, d.waterByDay),
+        dayLogs: { ...(r.dayLogs ?? {}), ...d.dayLogs },
+        favourites: byId(r.favourites, d.favourites, f => f.id),
+        customFoods: byId(r.customFoods, d.customFoods, f => f.id),
+        challenges: byId(r.challenges, d.challenges, c => c.id + (c.completedAt ? ':done' : ':run')),
+        openDays: [...new Set([...(r.openDays ?? []), ...d.openDays])].sort().slice(-400),
+        profile: d.profile.name ? d.profile : { ...d.profile, ...(r.profile ?? {}) },
+        plan: d.plan ?? r.plan ?? null,
+        planStartedAt: d.planStartedAt ?? r.planStartedAt ?? null,
+        planChat: d.planChat.length ? d.planChat : (r.planChat ?? []),
+        avatar: d.avatar.kind !== 'initial' ? d.avatar : (r.avatar ?? d.avatar),
+      };
+    }),
     ...data, ready, targets,
     waterMl: data.waterByDay[dayKey()] ?? 0,
     set,

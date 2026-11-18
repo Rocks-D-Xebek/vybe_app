@@ -40,10 +40,14 @@
       "expo-router",
       "expo-status-bar",
       "expo-font",
-      "expo-sharing"
+      "expo-sharing",
+      "expo-web-browser"
     ],
     "extra": {
-      "apiUrl": "https://vibenews.in/backend/vybe-api"
+      "apiUrl": "https://vibenews.in/backend/vybe-api",
+      "supabaseUrl": "",
+      "supabaseAnonKey": "",
+      "revenuecatAndroidKey": ""
     }
   }
 }

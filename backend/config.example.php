@@ -8,5 +8,9 @@ return [
     'MODEL_STRONG'        => 'gemini-3.8-flash',   // newer Flash, used to re-check low-confidence food scans
     'MODEL_BACKUP'        => 'gemini-3.5-flash-lite', // used automatically if the main model fails
     'MODEL_IMAGE'         => 'gemini-3.1-flash-image', // redraws profile photos in graffiti style
+    // ---- Phase 2 (accounts & Premium) ----
+    'SUPABASE_URL'              => 'https://YOUR-PROJECT.supabase.co',
+    'SUPABASE_SERVICE_KEY'      => 'PASTE_SERVICE_ROLE_SECRET_HERE',   // SECRET: server only, never in the app
+    'REVENUECAT_WEBHOOK_SECRET' => 'MAKE_UP_A_LONG_RANDOM_PASSWORD',
     'RATE_LIMIT_PER_HOUR' => 60,                 // AI requests per phone/IP per hour
 ];

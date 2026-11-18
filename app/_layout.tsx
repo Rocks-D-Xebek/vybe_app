@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts, PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
 import { ThemeProvider, useTheme } from '../src/theme/ThemeContext';
 import { AppStoreProvider, useApp } from '../src/store/AppStore';
+import { AuthProvider } from '../src/store/Auth';
 
 function Root() {
   const { colors, isDark } = useTheme();
@@ -28,6 +29,13 @@ function Root() {
         <Stack.Screen name="scan" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="insights" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="wrapped" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="login" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="account-setup" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="friends" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="challenge/new" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="challenge/[id]" options={{ animation: 'slide_from_right' }} />
+        <Stack.Screen name="invite/[code]" options={{ animation: 'fade' }} />
+        <Stack.Screen name="premium" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
     </>
   );
@@ -37,7 +45,9 @@ export default function Layout() {
   return (
     <ThemeProvider>
       <AppStoreProvider>
-        <Root />
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
       </AppStoreProvider>
     </ThemeProvider>
   );

@@ -15,12 +15,16 @@ import { api } from '../../src/lib/api';
 import { toUploadBase64 } from '../../src/lib/image';
 import { CHALLENGES } from '../../src/lib/challenges';
 import { ensurePermission, applyReminders } from '../../src/lib/reminders';
+import { useAuth } from '../../src/store/Auth';
+import { cloudReady, rpc } from '../../src/lib/supabase';
+import { billingReady } from '../../src/lib/purchases';
 
 export default function Profile() {
   const { colors, mode, setMode } = useTheme();
   const app = useApp();
   const { profile, targets } = app;
   const insets = useSafeAreaInsets();
+  const auth = useAuth();
   const [name, setName] = useState(profile.name);
   const [pickAvatar, setPickAvatar] = useState(false);
   const [making, setMaking] = useState(false);
@@ -99,7 +103,7 @@ export default function Profile() {
               value={name} onChangeText={setName} onBlur={() => app.updateProfile({ name: name.trim() || profile.name })} />
             <Text style={{ color: colors.sub, fontWeight: '600' }}>{app.plan ? app.plan.title : profile.goal}</Text>
           </View>
-          {app.premium && <MaterialCommunityIcons name="crown" size={26} color="#FFC83D" />}
+          {auth.isPremium && <MaterialCommunityIcons name="crown" size={26} color="#FFC83D" />}
         </View>
         <View style={{ backgroundColor: colors.surface, paddingHorizontal: 14, paddingBottom: 14, flexDirection: 'row', gap: 8 }}>
           <Choice flex label="✨ Graffiti selfie" selected onPress={() => makeover(true)} />
@@ -151,6 +155,51 @@ export default function Profile() {
         </Pressable>
       </View>
 
+      {/* Account */}
+      <View style={card(colors)}>
+        <Text style={title(colors)}>Account</Text>
+        {!cloudReady ? (
+          <Text style={{ color: colors.sub }}>Accounts launch soon. Everything is saved on this phone.</Text>
+        ) : !auth.session ? (
+          <>
+            <Text style={{ color: colors.sub, marginBottom: 10 }}>Sign in to back up your data, add friends and join challenges.</Text>
+            <Choice label="Sign in / Sign up" selected onPress={() => router.push('/login')} />
+          </>
+        ) : (
+          <View style={{ gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.text, fontWeight: '900' }}>@{auth.profile?.username ?? '…'}</Text>
+                <Text style={{ color: colors.sub, fontSize: 12 }}>
+                  {auth.profile?.city || 'No city'} · {auth.session.user.email ?? auth.session.user.phone ?? ''}
+                </Text>
+              </View>
+              <Choice label="Edit" onPress={() => router.push('/account-setup')} />
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="cloud-done" size={16} color={colors.lime} />
+              <Text style={{ color: colors.sub, fontSize: 12, flex: 1 }}>
+                {auth.lastSync ? `Backed up ${new Date(auth.lastSync).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : 'Backing up…'}
+              </Text>
+              <Pressable onPress={() => auth.syncNow()}><Text style={{ color: colors.cyan, fontWeight: '800', fontSize: 12 }}>Back up now</Text></Pressable>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Choice flex label="👥 Friends" onPress={() => router.push('/friends')} />
+              <Choice flex label="Sign out" onPress={() => Alert.alert('Sign out?', 'Your data stays on this phone and in the cloud.', [
+                { text: 'Cancel', style: 'cancel' }, { text: 'Sign out', onPress: () => auth.signOut() }])} />
+            </View>
+            <Pressable onPress={() => Alert.alert('Delete account?', 'This permanently deletes your VYBE account, friends, challenges and cloud backup. Data on this phone stays until you uninstall.', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Delete forever', style: 'destructive', onPress: async () => {
+                try { await rpc('delete_my_account'); await auth.signOut(); Alert.alert('Account deleted'); }
+                catch (e: any) { Alert.alert('Could not delete', e?.message ?? 'Try again'); }
+              } }])}>
+              <Text style={{ color: colors.danger, fontSize: 12, fontWeight: '700', textAlign: 'center' }}>Delete my account</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>
+
       {/* Premium */}
       <LinearGradient colors={['#2A1550', '#4A0F35']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={{ borderRadius: 22, padding: 16, borderWidth: 1.5, borderColor: '#FFC83D', gap: 10 }}>
@@ -161,13 +210,19 @@ export default function Profile() {
         <Text style={{ color: '#E6E6EE', lineHeight: 20 }}>
           Personal AI diet & workout plans from Mr. Vyb · Global Race · challenge anyone, anywhere · group challenges · unlimited challenges.
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 14, padding: 12 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Premium (testing mode)</Text>
-            <Text style={{ color: '#CFCFDA', fontSize: 12 }}>Real payments via Google Play arrive in phase 3</Text>
+        <Pressable onPress={() => router.push('/premium')} style={{ backgroundColor: '#FFC83D', borderRadius: 14, paddingVertical: 12, alignItems: 'center' }}>
+          <Text style={{ color: '#07070B', fontWeight: '900' }}>{auth.isPremium ? "You're Premium 👑" : 'See Premium plans'}</Text>
+        </Pressable>
+        {!billingReady && (
+          // Only before launch: lets you try Premium features on this phone (social limits still use the server's Premium flag)
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 14, padding: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Premium (testing mode)</Text>
+              <Text style={{ color: '#CFCFDA', fontSize: 12 }}>Disappears once Google Play billing is connected</Text>
+            </View>
+            <Switch value={app.premium} onValueChange={v => app.set('premium', v)} trackColor={{ true: '#FFC83D', false: '#444' }} thumbColor="#FFFFFF" />
           </View>
-          <Switch value={app.premium} onValueChange={v => app.set('premium', v)} trackColor={{ true: '#FFC83D', false: '#444' }} thumbColor="#FFFFFF" />
-        </View>
+        )}
       </LinearGradient>
 
       {/* Plan */}
@@ -230,7 +285,8 @@ export default function Profile() {
           {[...AVATARS.map((a, i) => ({ src: a, i })), { src: IMG.mrvyb, i: -1 }].map(({ src, i }) => {
             const sel = app.avatar.kind === 'preset' && app.avatar.index === i;
             return (
-              <Pressable key={i} onPress={() => { app.set('avatar', { kind: 'preset', index: i }); setPickAvatar(false); }}>
+              <Pressable key={i} onPress={() => { app.set('avatar', { kind: 'preset', index: i }); setPickAvatar(false);
+                if (auth.session) auth.saveProfile({ avatar: i === -1 ? 'mrvyb' : `preset:${i}` }).catch(() => {}); }}>
                 <Image source={src} style={{ width: 70, height: 70, borderRadius: 35, borderWidth: 3, borderColor: sel ? colors.lime : 'transparent' }} />
               </Pressable>
             );

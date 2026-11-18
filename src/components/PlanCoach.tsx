@@ -12,6 +12,7 @@ import { dayKey } from '../lib/dates';
 import { IMG } from '../lib/images';
 import { PremiumLock } from './vybe';
 import { Choice } from './ui';
+import { useAuth } from '../store/Auth';
 
 const OPENER = "Let's build YOUR plan 🔥 I'll ask a few quick questions like a friend would, then design your diet and workouts. First up: what's the goal? Lose weight, gain weight, build muscle, get fitter, run faster… or something else?";
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -19,18 +20,19 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function PlanCoach() {
   const { colors } = useTheme();
   const app = useApp();
+  const auth = useAuth();
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const listRef = useRef<FlatList>(null);
 
-  if (!app.premium) {
+  if (!auth.isPremium) {
     return (
       <ScrollView contentContainerStyle={{ padding: 16, gap: 14 }}>
         <Image source={IMG.mrvyb} style={{ width: '100%', height: 220, borderRadius: 22 }} resizeMode="cover" />
         <PremiumLock title="Your personal plan"
           text="Chat with Mr. Vyb like a mentor. He builds a precise diet + workout plan for weight loss, weight gain, muscle, running or any goal, then guides you every single day."
-          onUnlock={() => router.push('/(tabs)/profile')} />
+          onUnlock={() => router.push('/premium')} />
       </ScrollView>
     );
   }

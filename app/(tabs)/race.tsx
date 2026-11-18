@@ -9,6 +9,8 @@ import { useTheme, FONT } from '../../src/theme/ThemeContext';
 import { useApp } from '../../src/store/AppStore';
 import { Logo, Avatar, Crown, Section } from '../../src/components/ui';
 import { Badge, PremiumLock } from '../../src/components/vybe';
+import { SocialRace } from '../../src/components/SocialRace';
+import { useAuth } from '../../src/store/Auth';
 import { PreviewBanner } from '../../src/components/PreviewBanner';
 import { GradientButton } from '../../src/components/GradientButton';
 import { IMG, AVATARS } from '../../src/lib/images';
@@ -32,6 +34,7 @@ export default function Race() {
   const { colors } = useTheme();
   const app = useApp();
   const insets = useSafeAreaInsets();
+  const auth = useAuth();
   const [left, setLeft] = useState(untilSunday());
   const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -71,27 +74,8 @@ export default function Race() {
       </View>
 
       <View style={{ paddingHorizontal: 16, gap: 22, marginTop: 14 }}>
-        {/* 1v1 challenges with friends (phase 2) */}
-        <LinearGradient colors={['#14142A', '#0B0B12']} style={{ borderRadius: 22, padding: 16, borderWidth: 1.5, borderColor: colors.cyan, gap: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <MaterialCommunityIcons name="sword-cross" size={22} color={colors.cyan} />
-            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '900', flex: 1 }}>Challenge friends 1v1</Text>
-            <View style={{ backgroundColor: colors.cyan, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-              <Text style={{ color: '#07070B', fontWeight: '900', fontSize: 10 }}>WITH ACCOUNTS</Text>
-            </View>
-          </View>
-          <Text style={{ color: '#D8D8E4', lineHeight: 20 }}>
-            Run, walk, swim, gym: challenge anyone in your city for free, or get a random match. Plus 5 national and 3 international challenges every month. Gym battles can go live on video with VYBE branding.
-          </Text>
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, padding: 12, gap: 6 }}>
-            <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>🔥 Login streak: {openStreak} day{openStreak === 1 ? '' : 's'}</Text>
-            <Text style={{ color: '#CFCFDA', fontSize: 12 }}>7 days in a row → +1 national challenge · 30 days → +3 national +2 international</Text>
-            <View style={{ height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
-              <View style={{ height: '100%', width: `${Math.min(100, (openStreak / (openStreak >= 7 ? 30 : 7)) * 100)}%`, backgroundColor: colors.cyan }} />
-            </View>
-          </View>
-          <Text style={{ color: colors.sub, fontSize: 12 }}>Friends, matching and live battles unlock when VYBE accounts launch. Your streak already counts!</Text>
-        </LinearGradient>
+        {/* 1v1 / group challenges with friends, leaderboards */}
+        <SocialRace />
 
         {/* Active solo challenges */}
         {active.length > 0 && (
@@ -147,7 +131,7 @@ export default function Race() {
         {/* Global race */}
         <View>
           <Section title="Global Race 🌍" />
-          {!app.premium ? (
+          {!auth.isPremium ? (
             <View style={{ gap: 12 }}>
               <ImageBackground source={IMG.raceHero} style={{ width: '100%', height: 150, borderRadius: 22, overflow: 'hidden' }} imageStyle={{ opacity: 0.55 }} resizeMode="cover">
                 <View style={{ flex: 1, padding: 16, justifyContent: 'center' }}>
@@ -156,7 +140,7 @@ export default function Race() {
               </ImageBackground>
               <PremiumLock title="Race the world"
                 text="Join the weekly Global Race, challenge anyone in any country, create group challenges and run unlimited battles."
-                onUnlock={() => router.push('/(tabs)/profile')} />
+                onUnlock={() => router.push('/premium')} />
             </View>
           ) : (
             <View style={{ gap: 14 }}>
