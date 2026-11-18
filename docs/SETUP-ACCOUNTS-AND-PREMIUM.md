@@ -5,6 +5,13 @@ The app works fully offline until these are set up. Do them in order. Each step 
 
 ---
 
+## Status (19 Nov 2026)
+- ✅ Supabase project **Vybe** (org VYBE, region Mumbai) created; database setup run; 18/18 rule tests passed (`supabase/tests/rules_test.sql`)
+- ✅ `app.json` has the project URL + publishable key
+- ✅ Redirect URLs `vybe://**` and `exp://**` added
+- ⏳ Email: works with the sign-in **link** now; custom SMTP needed for 6-digit codes and more than a few emails per hour
+- ⏳ Google login, WhatsApp login, server config.php values, RevenueCat
+
 ## 1. Supabase (accounts, friends, challenges, backup)
 1. supabase.com → **New project** → name `vybe`, region **Mumbai (ap-south-1)**, save the database password somewhere safe.
 2. **SQL Editor → New query** → paste everything from `supabase/migrations/0001_vybe_social.sql` → **Run**. You should see "Success".

@@ -45,8 +45,8 @@
     ],
     "extra": {
       "apiUrl": "https://vibenews.in/backend/vybe-api",
-      "supabaseUrl": "",
-      "supabaseAnonKey": "",
+      "supabaseUrl": "https://zjuqqifvonuansobsjjp.supabase.co",
+      "supabaseAnonKey": "sb_publishable_If4aEqT6ee84fqMYbcw5fg_EDrejnvk",
       "revenuecatAndroidKey": ""
     }
   }

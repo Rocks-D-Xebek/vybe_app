@@ -106,7 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     sendEmailCode: async email => {
       if (!supabase) throw new Error('Accounts are not set up yet.');
-      const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+      // The email contains a sign-in link (and a 6-digit code once custom SMTP templates are set up)
+      const { error } = await supabase.auth.signInWithOtp({ email: email.trim().toLowerCase(),
+        options: { shouldCreateUser: true, emailRedirectTo: Linking.createURL('auth-callback') } });
       if (error) throw new Error(error.message);
     },
     verifyEmailCode: async (email, code) => {

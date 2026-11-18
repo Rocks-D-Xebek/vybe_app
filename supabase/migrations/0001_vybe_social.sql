@@ -416,6 +416,15 @@ begin
   delete from auth.users where id = auth.uid();
 end $$;
 
+-- Table access for the app (rows are still filtered by the policies above).
+-- Explicit grants, so this works even when "Grant API access to new tables automatically" is off.
+revoke all on public.profiles, public.user_backups, public.friendships, public.challenges,
+  public.challenge_members, public.challenge_entries from anon;
+grant select on public.profiles to authenticated;
+grant select, insert, update, delete on public.user_backups to authenticated;
+grant select, delete on public.friendships to authenticated;
+grant select on public.challenges, public.challenge_members, public.challenge_entries to authenticated;
+
 -- Only signed-in users may call these (functions are executable by everyone by default)
 revoke execute on all functions in schema public from public, anon;
 grant execute on all functions in schema public to authenticated;

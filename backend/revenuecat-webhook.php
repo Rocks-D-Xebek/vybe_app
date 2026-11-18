@@ -38,7 +38,8 @@ $ch = curl_init("$sbUrl/rest/v1/profiles?id=eq.$uid");
 curl_setopt_array($ch, [
     CURLOPT_CUSTOMREQUEST => 'PATCH',
     CURLOPT_RETURNTRANSFER => true,
-    CURLOPT_HTTPHEADER => ['apikey: ' . $sbKey, 'Authorization: Bearer ' . $sbKey, 'Content-Type: application/json', 'Prefer: return=minimal'],
+    // New Supabase secret keys (sb_secret_…) go only in the apikey header
+    CURLOPT_HTTPHEADER => ['apikey: ' . $sbKey, 'Content-Type: application/json', 'Prefer: return=minimal'],
     CURLOPT_POSTFIELDS => json_encode($patch),
     CURLOPT_TIMEOUT => 20,
 ]);

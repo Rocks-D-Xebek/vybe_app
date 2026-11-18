@@ -30,6 +30,7 @@ function Root() {
         <Stack.Screen name="insights" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="wrapped" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="login" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="auth-callback" options={{ animation: 'fade' }} />
         <Stack.Screen name="account-setup" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="friends" options={{ animation: 'slide_from_right' }} />
         <Stack.Screen name="challenge/new" options={{ animation: 'slide_from_bottom' }} />

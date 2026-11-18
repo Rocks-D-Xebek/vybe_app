@@ -92,7 +92,8 @@ export default function Login() {
             )}
             {step === 'email-code' && (
               <View style={{ gap: 12 }}>
-                <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Enter the 6-digit code sent to {email}</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '800' }}>Check {email}</Text>
+                <Text style={{ color: '#CFCFDA', lineHeight: 20 }}>Open the email on this phone and tap the sign-in link. It opens VYBE. If the email shows a code instead, type it here:</Text>
                 <TextInput value={code} onChangeText={setCode} keyboardType="number-pad" maxLength={8} autoFocus
                   placeholder="123456" placeholderTextColor="#8A8AA0" style={[input, { letterSpacing: 6, textAlign: 'center' }]} />
                 <Primary label="Verify" busy={busy} disabled={code.length < 6} onPress={() => run(() => auth.verifyEmailCode(email, code))} />
